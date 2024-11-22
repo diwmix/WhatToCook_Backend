@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 
 from pathlib import Path
+import dj_database_url
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -37,6 +38,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'profiles'
 ]
 
 MIDDLEWARE = [
@@ -80,7 +82,9 @@ DATABASES = {
     }
 }
 
+DATABASES['default'] = dj_database_url.parse('postgresql://whattocook_user:OIsbzt6WHqLrIRBTRmWYdUaPbJKA5sQ8@dpg-ct02r9hopnds73a6rlig-a.oregon-postgres.render.com/whattocook')
 
+AUTH_USER_MODEL = 'profiles.CustomUser'
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
 
