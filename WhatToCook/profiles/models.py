@@ -9,7 +9,7 @@ class CustomUser(AbstractUser):
     is_admin = models.BooleanField(default=False)
     name = models.TextField(blank=False)
     email = models.EmailField(unique=True)
-
+    #fhgieuahbgibfak
     description = models.TextField(blank=True, null=True)
     social_links = models.JSONField(blank=True, null=True)
     age = models.PositiveIntegerField(blank=True, null=True)
