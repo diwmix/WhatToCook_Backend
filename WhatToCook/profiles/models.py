@@ -9,7 +9,7 @@ class CustomUser(AbstractUser):
     is_admin = models.BooleanField(default=False)
     name = models.TextField(blank=False)
     email = models.EmailField(unique=True)
-    #fhgieuahbgibfak
+
     description = models.TextField(blank=True, null=True)
     social_links = models.JSONField(blank=True, null=True)
     age = models.PositiveIntegerField(blank=True, null=True)
@@ -18,6 +18,9 @@ class CustomUser(AbstractUser):
     restricted_products = models.TextField(blank=True, null=True)
 
     average_rating = models.FloatField(default=0)
+
+    def __str__(self):
+        return self.email
 
     def update_average_rating(self):
         ratings = self.ratings.all()
