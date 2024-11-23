@@ -47,7 +47,7 @@ class RecipeView(APIView):
 class RecipeCreateView(APIView):
     permission_classes = [IsAuthenticated]
 
-    def post_recipe(self, request):
+    def post(self, request):
         data = request.data
         serializer = RecipeSerializer(data=data)
         if serializer.is_valid():
