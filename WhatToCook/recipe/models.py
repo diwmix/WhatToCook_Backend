@@ -7,7 +7,7 @@ class Recipe(models.Model):
     instructions = models.TextField()
     category = models.CharField(max_length=100)
     subcategory = models.CharField(max_length=100)
-    photo = models.ImageField(upload_to='recipes/photos/')
+    photo = models.ImageField(upload_to='recipes/photos/') # to do cloudinary
     author = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
     is_approved = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
