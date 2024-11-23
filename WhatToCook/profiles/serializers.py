@@ -27,6 +27,11 @@ class RatingSerializer(serializers.ModelSerializer):
         fields = ['id', 'user', 'rated_by', 'rating']
         read_only_fields = ['rated_by']
 
+    def update(self, instance, validated_data):
+        instance.rating = validated_data.get('rating', instance.rating)
+        instance.save()
+        return instance
+
 
 class RegistrationSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(required=True)
