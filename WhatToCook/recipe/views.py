@@ -2,7 +2,13 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from groq import Groq
-from .serializers import RecipeRequestSerializer
+from .serializers import RecipeRequestSerializer , RecipeSerializer
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.status import HTTP_201_CREATED, HTTP_400_BAD_REQUEST
+from rest_framework.generics import ListAPIView
+from .models import Recipe
+from .serializers import RecipeSerializer
+
 
 client = Groq(
     api_key="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"
@@ -36,3 +42,20 @@ class RecipeView(APIView):
                 return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class RecipeCreateView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post_recipe(self, request):
+        data = request.data
+        serializer = RecipeSerializer(data=data)
+        if serializer.is_valid():
+            serializer.save(author=request.user)
+            return Response(serializer.data, status=HTTP_201_CREATED)
+        return Response(serializer.errors, status=HTTP_400_BAD_REQUEST)
+
+
+class PublishedRecipesView(ListAPIView):
+    queryset = Recipe.objects.filter(is_approved=True).order_by('-created_at')
+    serializer_class = RecipeSerializer
