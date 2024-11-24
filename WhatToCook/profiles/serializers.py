@@ -27,6 +27,11 @@ class RatingSerializer(serializers.ModelSerializer):
         fields = ['id', 'user', 'rated_by', 'rating']
         read_only_fields = ['rated_by']
 
+    def update(self, instance, validated_data):
+        instance.rating = validated_data.get('rating', instance.rating)
+        instance.save()
+        return instance
+
 
 class RegistrationSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(required=True)
@@ -44,10 +49,11 @@ class RegistrationSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         user = CustomUser.objects.create(
             email=validated_data['email'],
-            username=validated_data.get('username', ''),
+            username=None,
             password=make_password(validated_data['password'])
         )
         return user
+
 
 
 class TwoStepInRegister(serializers.ModelSerializer):

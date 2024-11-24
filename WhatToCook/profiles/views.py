@@ -6,6 +6,8 @@ from rest_framework.authtoken.models import Token
 from .models import CustomUser, Rating
 from .serializers import UserSerializer, RatingSerializer, RegistrationSerializer, TwoStepInRegister
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.authentication import TokenAuthentication
+
 
 
 class UserViewSet(viewsets.ViewSet):
@@ -28,28 +30,54 @@ class UserViewSet(viewsets.ViewSet):
         try:
             user = CustomUser.objects.get(id=id)
         except CustomUser.DoesNotExist:
-            return Response({"error": "User not found"}, status=404)
+            return Response({"error": "Користувача не знайдено"}, status=404)
+
+        if user == request.user:
+            return Response({"error": "Ви не можете оцінити себе"}, status=400)
+
+        existing_rating = Rating.objects.filter(user=user, rated_by=request.user).first()
+
+        if existing_rating:
+            if request.data.get("action") == "remove":
+                existing_rating.delete()
+                user.update_average_rating()
+                return Response({'status': 'Оцінку видалено', 'average_rating': user.average_rating})
+            serializer = RatingSerializer(existing_rating, data=request.data, partial=True)
+            if serializer.is_valid():
+                serializer.save()
+                user.update_average_rating()
+                return Response({'status': 'Оцінку оновлено', 'average_rating': user.average_rating})
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         serializer = RatingSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save(rated_by=request.user, user=user)
         user.update_average_rating()
-        return Response({'status': 'Rating added', 'average_rating': user.average_rating})
+
+        return Response({'status': 'Оцінку додано', 'average_rating': user.average_rating})
+
+    ##  {
+    #   "action": "remove"
+    #   }
+    # якшо в запиті буде так , то це забере оцінку
 
 
 class RegistrationView(APIView):
     def post(self, request):
         serializer = RegistrationSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
+            user = serializer.save()
+
+            token, created = Token.objects.get_or_create(user=user)
+
             return Response(
-                {"message": "Registration successful. Check your email for verification."},
+                {"message": "Registration successful.", "token": token.key},
                 status=status.HTTP_201_CREATED
             )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class LoginView(APIView):
-    def post(self, request):  # змінили на 'post'
+    def post(self, request):
         email = request.data.get("email")
         password = request.data.get("password")
 
@@ -59,7 +87,7 @@ class LoginView(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        user = authenticate(username=email, password=password)  # Замінили CustomUser на user
+        user = authenticate(username=email, password=password)
         if user is not None:
             token, _ = Token.objects.get_or_create(user=user)
             return Response({"token": token.key}, status=status.HTTP_200_OK)
@@ -67,7 +95,11 @@ class LoginView(APIView):
 
 
 class TwoStepInRegisterView(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
     def post(self, request):
+
         serializer = TwoStepInRegister(instance=request.user, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
