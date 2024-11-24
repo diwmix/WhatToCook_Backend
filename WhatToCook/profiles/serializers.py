@@ -49,10 +49,11 @@ class RegistrationSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         user = CustomUser.objects.create(
             email=validated_data['email'],
-            username=validated_data.get('username', ''),
+            username=None,
             password=make_password(validated_data['password'])
         )
         return user
+
 
 
 class TwoStepInRegister(serializers.ModelSerializer):

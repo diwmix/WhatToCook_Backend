@@ -6,6 +6,7 @@ from django.db.models import Avg
 
 
 class CustomUser(AbstractUser):
+    username = models.CharField(max_length=150, unique=True, null=True, blank=True)
     description = models.TextField(blank=True, null=True)
     social_links = models.JSONField(blank=True, null=True)
     age = models.PositiveIntegerField(blank=True, null=True)
