@@ -7,8 +7,8 @@ from .models import CustomUser, Rating
 from .serializers import UserSerializer, RatingSerializer, RegistrationSerializer, TwoStepInRegister
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.authentication import TokenAuthentication
-
-
+from rest_framework.permissions import AllowAny
+from django.contrib.auth.hashers import check_password
 
 class UserViewSet(viewsets.ViewSet):
     permission_classes = [IsAuthenticated]
@@ -60,7 +60,17 @@ class UserViewSet(viewsets.ViewSet):
     #   "action": "remove"
     #   }
     # якшо в запиті буде так , то це забере оцінку
+class UserAvatarUploadView(APIView):
+    permission_classes = [IsAuthenticated]
 
+    def post(self, request):
+        user = request.user
+        avatar = request.FILES.get('avatar')  # Get avatar file from the request
+        if avatar:
+            user.avatar = avatar  # Save avatar to Cloudinary
+            user.save()
+            return Response({"message": "Avatar updated successfully.", "avatar_url": user.avatar.url})
+        return Response({"error": "No avatar file provided."}, status=status.HTTP_400_BAD_REQUEST)
 
 class RegistrationView(APIView):
     def post(self, request):
@@ -77,6 +87,7 @@ class RegistrationView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class LoginView(APIView):
+    permission_classes = []
     def post(self, request):
         email = request.data.get("email")
         password = request.data.get("password")
@@ -87,7 +98,7 @@ class LoginView(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        user = authenticate(username=email, password=password)
+        user = authenticate(request, username=email, password=password)
         if user is not None:
             token, _ = Token.objects.get_or_create(user=user)
             return Response({"token": token.key}, status=status.HTTP_200_OK)

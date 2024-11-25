@@ -18,7 +18,7 @@ class UserSerializer(serializers.ModelSerializer):
         model = CustomUser
         fields = ['id', 'username', 'email', 'description', 'social_links', 'age',
                   'allergic_products', 'restricted_products', 'favorite_dishes', 'created_dishes',
-                  'average_rating']
+                  'average_rating', 'avatar']  # Include avatar field here
 
 
 class RatingSerializer(serializers.ModelSerializer):

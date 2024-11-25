@@ -12,7 +12,9 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 
 from pathlib import Path
 import dj_database_url
-
+import cloudinary
+import cloudinary.uploader
+import cloudinary.api
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -76,7 +78,11 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'WhatToCook.wsgi.application'
 
-
+REST_FRAMEWORK = {
+   'DEFAULT_AUTHENTICATION_CLASSES': (
+       'rest_framework.authentication.TokenAuthentication',
+   ),
+}
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
@@ -89,6 +95,18 @@ DATABASES = {
 
 DATABASES['default'] = dj_database_url.parse('postgresql://whattocook_user:OIsbzt6WHqLrIRBTRmWYdUaPbJKA5sQ8@dpg-ct02r9hopnds73a6rlig-a.oregon-postgres.render.com/whattocook')
 
+#Cloudinary
+
+cloudinary.config(
+    cloud_name="dywg5dgh3",
+    api_key="384498737396647",
+    api_secret="YWfEZ8Cry8xOEGozjKM4FxACRAw",
+)
+
+DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+
+# Media URL configuration for Cloudinary
+MEDIA_URL = 'https://res.cloudinary.com/your_cloud_name/'
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
 
