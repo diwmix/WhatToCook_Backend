@@ -5,35 +5,42 @@ from recipe.models import Recipe
 
 
 class RecipeSerializer(serializers.ModelSerializer):
+    """Сериалізатор для рецепту, який визначає поля, що будуть відображатися в API."""
     class Meta:
         model = Recipe
         fields = ['id', 'title', 'ingredients', 'instructions', 'category', 'subcategory', 'photo', 'created_at']
 
 
 class UserSerializer(serializers.ModelSerializer):
+    """Сериалізатор для користувача, що включає рецепти, які користувач має в обраних та створених, а також середній рейтинг та кількість рейтингів."""
     favorite_dishes = RecipeSerializer(many=True, read_only=True)
     created_dishes = RecipeSerializer(many=True, read_only=True)
+    rating_count = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = CustomUser
         fields = ['id', 'username', 'email', 'description', 'social_links', 'age',
                   'allergic_products', 'restricted_products', 'favorite_dishes', 'created_dishes',
-                  'average_rating', 'avatar']  # Include avatar field here
+                  'average_rating', 'rating_count', 'avatar']
 
 
 class RatingSerializer(serializers.ModelSerializer):
+    """Сериалізатор для рейтингу, який визначає, які поля будуть використовуватися в API."""
+
     class Meta:
         model = Rating
-        fields = ['id', 'user', 'rated_by', 'rating']
+        fields = ['user', 'rated_by', 'rating']
         read_only_fields = ['rated_by']
 
-    def update(self, instance, validated_data):
-        instance.rating = validated_data.get('rating', instance.rating)
-        instance.save()
-        return instance
+    def validate(self, data):
+        """Перевірка, щоб не оцінювати самого себе."""
+        if ['user'] == ['rated_by']:
+            raise serializers.ValidationError("Ви не можете оцінити себе")
+        return data
 
 
 class RegistrationSerializer(serializers.ModelSerializer):
+    """Сериалізатор для реєстрації користувача, включаючи перевірку на унікальність email."""
     email = serializers.EmailField(required=True)
     password = serializers.CharField(write_only=True)
 
@@ -42,21 +49,38 @@ class RegistrationSerializer(serializers.ModelSerializer):
         fields = ['email', 'password']
 
     def validate_email(self, value):
+        """Перевірка, чи не використовується вже введений email в базі даних."""
         if CustomUser.objects.filter(email=value).exists():
             raise serializers.ValidationError("This email is already in use.")
         return value
 
     def create(self, validated_data):
+        """Створення нового користувача з наданими даними, в тому числі з хешованим паролем."""
         user = CustomUser.objects.create(
             email=validated_data['email'],
             username=None,
-            password=make_password(validated_data['password'])
+            password=make_password(validated_data['password']),
+            is_active = True
         )
         return user
 
 
-
 class TwoStepInRegister(serializers.ModelSerializer):
+    """Сериалізатор для другого етапу реєстрації користувача, для заповнення додаткових даних."""
     class Meta:
         model = CustomUser
-        fields = ['username', 'age', 'social_links', 'allergic_products', 'restricted_products']
+        fields = ['username', 'age', 'social_links', 'allergic_products', 'restricted_products','description']
+
+
+class UserProfileUpdateSerializer(serializers.ModelSerializer):
+    """ Сериалізатор для оновлення профілю користувача. """
+    class Meta:
+        model = CustomUser
+        fields = ['username', 'age', 'social_links', 'allergic_products', 'restricted_products','description']
+
+    def update(self, instance, validated_data):
+        """ Оновлення атрибутів користувача на основі наданих даних."""
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+        return instance

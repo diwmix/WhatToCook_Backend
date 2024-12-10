@@ -4,11 +4,12 @@ from rest_framework.views import APIView
 from django.contrib.auth import authenticate
 from rest_framework.authtoken.models import Token
 from .models import CustomUser, Rating
-from .serializers import UserSerializer, RatingSerializer, RegistrationSerializer, TwoStepInRegister
+from .serializers import UserSerializer, RatingSerializer, RegistrationSerializer, TwoStepInRegister, UserProfileUpdateSerializer
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.permissions import AllowAny
 from django.contrib.auth.hashers import check_password
+
 
 class UserViewSet(viewsets.ViewSet):
     permission_classes = [IsAuthenticated]
@@ -26,22 +27,39 @@ class UserViewSet(viewsets.ViewSet):
         except CustomUser.DoesNotExist:
             return Response({"error": "User not found"}, status=404)
 
-    def rate_user(self, request, id=None):
+    def rate_user(self, request):
+        """Оцінювання користувача"""
+
+        # Отримання даних з запиту
+        user_id = request.data.get("user")
+        rated_by_id = request.data.get("rated_by")
+        rating_value = request.data.get("rating")
+
+        if not user_id or not rated_by_id or rating_value is None:
+            return Response({"error": "Не всі необхідні дані надано"}, status=400)
+
         try:
-            user = CustomUser.objects.get(id=id)
+            # Знайдемо користувача, якому ставлять оцінку
+            user = CustomUser.objects.get(id=user_id)
+
+            # Знайдемо користувача, який ставить оцінку
+            rated_by = CustomUser.objects.get(id=rated_by_id)
         except CustomUser.DoesNotExist:
             return Response({"error": "Користувача не знайдено"}, status=404)
 
-        if user == request.user:
+        # Перевірка, чи не оцінює користувач сам себе
+        if user == rated_by:
             return Response({"error": "Ви не можете оцінити себе"}, status=400)
 
-        existing_rating = Rating.objects.filter(user=user, rated_by=request.user).first()
+        # Додавання або оновлення рейтингу
+        return self.add_or_update_rating(request, user, rated_by, rating_value)
 
+    def add_or_update_rating(self, request, user, rated_by, rating_value):
+        """Додавання або оновлення рейтингу"""
+        existing_rating = Rating.objects.filter(user=user, rated_by=rated_by).first()
+
+        # Якщо рейтинг вже існує, оновимо його
         if existing_rating:
-            if request.data.get("action") == "remove":
-                existing_rating.delete()
-                user.update_average_rating()
-                return Response({'status': 'Оцінку видалено', 'average_rating': user.average_rating})
             serializer = RatingSerializer(existing_rating, data=request.data, partial=True)
             if serializer.is_valid():
                 serializer.save()
@@ -49,17 +67,13 @@ class UserViewSet(viewsets.ViewSet):
                 return Response({'status': 'Оцінку оновлено', 'average_rating': user.average_rating})
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+        # Створення нового рейтингу
         serializer = RatingSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        serializer.save(rated_by=request.user, user=user)
+        serializer.save(rated_by=rated_by, user=user, rating=rating_value)
         user.update_average_rating()
-
         return Response({'status': 'Оцінку додано', 'average_rating': user.average_rating})
 
-    ##  {
-    #   "action": "remove"
-    #   }
-    # якшо в запиті буде так , то це забере оцінку
 class UserAvatarUploadView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -129,4 +143,42 @@ class TwoStepInRegisterView(APIView):
         if serializer.is_valid():
             serializer.save()
             return Response({"message": "Profile updated successfully."})
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class SoftDeleteProfileView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        user = request.user
+
+        # Якщо користувач уже видалений, не даємо можливості видаляти профіль повторно
+        if not user.is_active:
+            return Response({"error": "Your account is already deactivated."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # М'яке видалення профілю
+        user.is_active = False
+        user.save()
+
+        return Response({"message": "Your account has been deactivated successfully."}, status=status.HTTP_200_OK)
+
+
+class UserProfileUpdateView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        """
+        Отримати дані профілю поточного користувача.
+        """
+        serializer = UserProfileUpdateSerializer(request.user)
+        return Response(serializer.data)
+
+    def put(self, request):
+        """
+        Оновити дані профілю поточного користувача.
+        """
+        serializer = UserProfileUpdateSerializer(request.user, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
