@@ -87,22 +87,36 @@ class RegistrationView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class LoginView(APIView):
-    permission_classes = []
+    permission_classes = [AllowAny]
+
     def post(self, request):
         email = request.data.get("email")
         password = request.data.get("password")
 
         if not email or not password:
             return Response(
-                {"error": "Email and password are required."},
+                {"error": "Email і пароль є обов'язковими."},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
+        # Аутентифікація
         user = authenticate(request, username=email, password=password)
         if user is not None:
-            token, _ = Token.objects.get_or_create(user=user)
-            return Response({"token": token.key}, status=status.HTTP_200_OK)
-        return Response({"error": "Invalid credentials."}, status=status.HTTP_401_UNAUTHORIZED)
+            # Генерація або отримання токена
+            token, created = Token.objects.get_or_create(user=user)
+
+            # Додавання додаткових даних до відповіді
+            user_data = UserSerializer(user).data
+            return Response({
+                "message": "Успішний вхід.",
+                "token": token.key,
+                "user": user_data
+            }, status=status.HTTP_200_OK)
+
+        return Response(
+            {"error": "Невірні дані для входу."},
+            status=status.HTTP_401_UNAUTHORIZED
+        )
 
 
 class TwoStepInRegisterView(APIView):
