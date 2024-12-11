@@ -34,7 +34,7 @@ class RecipeView(APIView):
                 if hasattr(response, 'choices') and response.choices:
                     recipe = response.choices[0].message.content
                 else:
-                    return Response({"error": "Некорректный ответ от Groq API"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                    return Response({"error": "Некорректна відповідь від Groq API"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
                 return Response({"recipe": recipe}, status=status.HTTP_200_OK)
 
@@ -59,3 +59,13 @@ class RecipeCreateView(APIView):
 class PublishedRecipesView(ListAPIView):
     queryset = Recipe.objects.filter(is_approved=True).order_by('-created_at')
     serializer_class = RecipeSerializer
+
+
+class RecipeSearchView(APIView):
+    def get(self, request):
+        query = request.GET.get('query')
+        if query:
+            recipes = Recipe.objects.filter(title__icontains=query) | Recipe.objects.filter(ingredients__icontains=query)
+            serializer = RecipeSerializer(recipes, many=True)
+            return Response(serializer.data)
+        return Response(query)
