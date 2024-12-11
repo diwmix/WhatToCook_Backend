@@ -15,14 +15,29 @@ client = Groq(
 )
 
 class GenerateRecipeView(APIView):
+    permission_classes = [IsAuthenticated]
+
     def post(self, request):
         serializer = RecipeRequestSerializer(data=request.data)
         if serializer.is_valid():
             ingredients = serializer.validated_data['ingredients']
-            prompt = f"Ти кухар найкращого ресторану у світі та працюєш на сайт What To Cook. Дай мені пораду , яку страву я можу приготувати з цих інградієнітів {', '.join(ingredients)}. На мої інші питання , ти відповідаєш , шо ти тільки кухар, який допомагає придумати рецепт . Якщо замість рецепту я вводжу неїстівні продукти , то ти кажеш, шо з цього не можна нічого зробити та відразу пишеш любий інший рецепт на свій погляд.Формат в якому ти маєш мені повертати рецепт має складатись  1)Короткий опис страви. 2)Інградієнти. 3)Рецепт приготування.Та завжди в кінці Пиши * З любов'ю Саша"
             
+            user = request.user
+            allergy_ingredients = user.allergic_products
+
+            allergy_warning = (f"У мене алергія на наступні інгредієнти: {', '.join(allergy_ingredients)}. "
+                               if allergy_ingredients else "")
+
+            prompt = (f"Ти кухар найкращого ресторану у світі та працюєш на сайт What To Cook. {allergy_warning}"
+                      f"Дай мені пораду, яку страву я можу приготувати з цих інгредієнтів: {', '.join(ingredients)}."
+                      f"На мої інші питання ти відповідаєш, що ти тільки кухар, який допомагає придумати рецепт. "
+                      f"Якщо замість рецепту я вводжу неїстівні продукти, то ти кажеш, що з цього не можна нічого зробити та відразу пишеш будь-який інший рецепт на свій погляд."
+                      f"Формат, у якому ти маєш мені повертати рецепт, має складатись з:"
+                      f"1) Короткий опис страви. 2) Інгредієнти. 3) Рецепт приготування."
+                      f"Та завжди в кінці пиши * З любов'ю Саша")
+
             try:
-                # Отправляем запрос к Groq API
+                # Send request to Groq API
                 response = client.chat.completions.create(
                     messages=[
                         {"role": "user", "content": prompt}
@@ -30,19 +45,18 @@ class GenerateRecipeView(APIView):
                     model="llama-3.1-70b-versatile",
                 )
 
-                # Корректное извлечение данных
+                # Process response
                 if hasattr(response, 'choices') and response.choices:
                     recipe = response.choices[0].message.content
                 else:
-                    return Response({"error": "Некорректна відповідь від Groq API"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                    return Response({"error": "Некоректна відповідь від Groq API"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
                 return Response({"recipe": recipe}, status=status.HTTP_200_OK)
 
             except Exception as e:
                 return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class RecipeCreateView(APIView):
     permission_classes = [IsAuthenticated]
