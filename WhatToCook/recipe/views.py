@@ -14,7 +14,7 @@ client = Groq(
     api_key="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"
 )
 
-class RecipeView(APIView):
+class GenerateRecipeView(APIView):
     def post(self, request):
         serializer = RecipeRequestSerializer(data=request.data)
         if serializer.is_valid():
@@ -69,3 +69,35 @@ class RecipeSearchView(APIView):
             serializer = RecipeSerializer(recipes, many=True)
             return Response(serializer.data)
         return Response(query)
+
+
+class RecipeDeleteView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, pk):
+        try:
+            recipe = Recipe.objects.get(pk=pk)
+            if recipe.author == request.user | request.user.is_superuser:
+                recipe.delete()
+                return Response({"message": "Recipe deleted successfully"}, status=status.HTTP_200_OK)
+            else:
+                return Response({"error": "You are not the author of this recipe"}, status=status.HTTP_403_FORBIDDEN)
+        except Recipe.DoesNotExist:
+            return Response({"error": "Recipe not found"}, status=status.HTTP_404_NOT_FOUND)
+        
+
+class RecipeDetailView(APIView):
+    def get(self, request, pk):
+        try:
+            recipe = Recipe.objects.get(pk=pk)
+            serializer = RecipeSerializer(recipe)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except Recipe.DoesNotExist:
+            return Response({"error": "Recipe not found"}, status=status.HTTP_404_NOT_FOUND)
+        
+
+class RecipeListView(APIView):
+    def get(self, request):
+        recipes = Recipe.objects.all()
+        serializer = RecipeSerializer(recipes, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
