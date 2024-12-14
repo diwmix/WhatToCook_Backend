@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Recipe
+from .models import Recipe, Review
 from profiles.serializers import UserSerializer
 
 class RecipeRequestSerializer(serializers.Serializer):
@@ -16,3 +16,7 @@ class RecipeSerializer(serializers.ModelSerializer):
             'id','title','ingredients','instructions','category','subcategory','photo','author','is_approved','created_at',
         ]
         
+class ReviewSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Review
+        fields = ['id', 'recipe', 'user', 'review_text', 'rating', 'created_at']
