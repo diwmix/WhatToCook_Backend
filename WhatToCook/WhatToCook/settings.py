@@ -45,10 +45,12 @@ INSTALLED_APPS = [
     'rest_framework',
     'recipe',
     'profiles',
+    'corsheaders',
 ]
 
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -95,6 +97,7 @@ DATABASES = {
 
 DATABASES['default'] = dj_database_url.parse('postgresql://whattocook_user:OIsbzt6WHqLrIRBTRmWYdUaPbJKA5sQ8@dpg-ct02r9hopnds73a6rlig-a.oregon-postgres.render.com/whattocook')
 
+CORS_ALLOW_ALL_ORIGINS = True
 #Cloudinary
 
 cloudinary.config(
