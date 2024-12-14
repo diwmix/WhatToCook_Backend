@@ -6,8 +6,8 @@ from .serializers import RecipeRequestSerializer , RecipeSerializer
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.status import HTTP_201_CREATED, HTTP_400_BAD_REQUEST
 from rest_framework.generics import ListAPIView
-from .models import Recipe
-from .serializers import RecipeSerializer
+from .models import Recipe, Review
+from .serializers import RecipeSerializer, ReviewSerializer
 
 
 client = Groq(
@@ -115,3 +115,21 @@ class RecipeListView(APIView):
         recipes = Recipe.objects.all()
         serializer = RecipeSerializer(recipes, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+    
+class ReviewView(APIView):
+    permission_classes = [IsAuthenticated]
+    def post(self, request, pk):
+        recipe = Recipe.objects.get(pk=pk)
+        user = request.user
+        review_text = request.data.get('review_text')
+        rating = request.data.get('rating')
+
+        review = Review.objects.create(
+            recipe=recipe,
+            user=user,
+            review_text=review_text,
+            rating=rating
+        )
+
+        serializer = ReviewSerializer(review)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)

@@ -18,3 +18,14 @@ class Recipe(models.Model):
 
     def __str__(self):
         return self.title
+
+
+class Review(models.Model):
+    recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    review_text = models.TextField()
+    rating = models.IntegerField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.user.username}'s review of {self.recipe.title}"
