@@ -29,7 +29,7 @@ SECRET_KEY = 'django-insecure-3ohlun#hwd6$(lxi*=2ur-pcjqp=-*t^o10cp=invbv@xi1r*3
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['whattocook-backend.onrender.com']
 
 
 # Application definition
