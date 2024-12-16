@@ -18,6 +18,8 @@ class CustomUser(AbstractUser):
     favorite_dishes = models.ManyToManyField('recipe.Recipe', related_name='favorite_by', blank=True)
     created_dishes = models.ManyToManyField('recipe.Recipe', related_name='author_by', blank=True)
     is_active = models.BooleanField(default=True)  # Для "м'якого видалення"
+    USERNAME_FIELD = "email"
+    REQUIRED_FIELDS = ["username"]
 
     def __str__(self):
         """Повертає email користувача як його унікальний ідентифікатор."""
