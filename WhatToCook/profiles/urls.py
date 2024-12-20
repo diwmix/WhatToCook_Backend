@@ -4,6 +4,7 @@ from .views import UserViewSet , RegistrationView , LoginView , TwoStepInRegiste
 urlpatterns = [
     path('api/users/', UserViewSet.as_view({'get': 'list_user'}), name='user-list'),
     path('api/users/<int:id>/', UserViewSet.as_view({'get': 'user_by_id'}), name='user-detail'),
+    path('api/users/me/', UserViewSet.as_view({'get': 'my_profile'}), name='my-profile'),
     path('api/users/rate/', UserViewSet.as_view({'post': 'rate_user'}), name='rate-user'),
     path('api/users/rate/update/', UserViewSet.as_view({'put': 'rate_user'}), name='update-rating'),
     path('api/users/rate/remove/', UserViewSet.as_view({'delete': 'remove_rating'}), name='remove-rating'),

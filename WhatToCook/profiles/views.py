@@ -19,6 +19,14 @@ class UserViewSet(viewsets.ViewSet):
         serializer = UserSerializer(queryset, many=True)
         return Response(serializer.data)
 
+    def my_profile(self, request):
+        """
+        Інформація для отримання інформації про користувача
+        """
+        user = request.user
+        serializer = UserSerializer(user)
+        return Response(serializer.data)
+
     def user_by_id(self, request, id=None):
         try:
             user = CustomUser.objects.get(id=id)
