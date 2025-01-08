@@ -98,7 +98,9 @@ REST_FRAMEWORK = {
 #     }
 # }
 
-
+DATABASES = {
+    'default': dj_database_url.parse(os.getenv('DATABASE_URL'))
+}
 
 CORS_ALLOW_ALL_ORIGINS = True
 #Cloudinarvvv
