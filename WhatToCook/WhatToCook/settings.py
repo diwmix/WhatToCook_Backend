@@ -15,7 +15,9 @@ import dj_database_url
 import cloudinary
 import cloudinary.uploader
 import cloudinary.api
-
+import os
+from dotenv import load_dotenv
+load_dotenv()
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -24,7 +26,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-3ohlun#hwd6$(lxi*=2ur-pcjqp=-*t^o10cp=invbv@xi1r*3'
+
+SECRET_KEY = os.getenv('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -88,22 +91,21 @@ REST_FRAMEWORK = {
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
-}
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.sqlite3',
+#         'NAME': BASE_DIR / 'db.sqlite3',
+#     }
+# }
 
-DATABASES['default'] = dj_database_url.parse('postgresql://whattocook_user:OIsbzt6WHqLrIRBTRmWYdUaPbJKA5sQ8@dpg-ct02r9hopnds73a6rlig-a.oregon-postgres.render.com/whattocook')
+
 
 CORS_ALLOW_ALL_ORIGINS = True
-#Cloudinary
-
+#Cloudinarvvv
 cloudinary.config(
-    cloud_name="dywg5dgh3",
-    api_key="384498737396647",
-    api_secret="YWfEZ8Cry8xOEGozjKM4FxACRAw",
+    cloud_name=os.getenv('CLOUDINARY_CLOUD_NAME'),
+    api_key=os.getenv('CLOUDINARY_API_KEY'),
+    api_secret=os.getenv('CLOUDINARY_API_SECRET'),
 )
 
 DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
