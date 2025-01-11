@@ -1,11 +1,13 @@
 from django.db import models
 from django.contrib.auth import get_user_model
 from cloudinary.models import CloudinaryField
+import random
+
 User = get_user_model()
 
 
 class Recipe(models.Model):
-
+    id = models.BigIntegerField(primary_key=True, default=None, editable=False)
     title = models.CharField(max_length=255)
     ingredients = models.TextField()
     instructions = models.TextField()
@@ -15,6 +17,18 @@ class Recipe(models.Model):
     author = models.ForeignKey(User, on_delete=models.CASCADE)
     is_approved = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    def save(self, *args, **kwargs):
+        if not self.id:  # Якщо ID ще не згенеровано
+            self.id = self.generate_random_id()
+        super().save(*args, **kwargs)
+
+    @staticmethod
+    def generate_random_id():
+        while True:
+            random_id = random.randint(100000, 1000000)
+            if not Recipe.objects.filter(id=random_id).exists():
+                return random_id
 
     def __str__(self):
         return self.title

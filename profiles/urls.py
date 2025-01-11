@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import UserViewSet , RegistrationView , LoginView , TwoStepInRegisterView, UserAvatarUploadView, UserProfileUpdateView, SoftDeleteProfileView
+from .views import UserViewSet , RegistrationView , LoginView , TwoStepInRegisterView, UserAvatarUploadView, UserProfileUpdateView, SoftDeleteProfileView, LogoutView
 
 urlpatterns = [
     path('api/users/', UserViewSet.as_view({'get': 'list_user'}), name='user-list'),
@@ -14,4 +14,5 @@ urlpatterns = [
     path('api/users/avatar/', UserAvatarUploadView.as_view(), name='user-avatar-upload'),
     path('api/users/soft-delete/', SoftDeleteProfileView.as_view(), name='soft-delete-profile'),
     path('api/users/profile-update/', UserProfileUpdateView.as_view(), name='user-profile-update'),
+    path('api/users/logout/', LogoutView.as_view(), name='logout'),
 ]

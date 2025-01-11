@@ -1,3 +1,5 @@
+from random import random
+
 from rest_framework import serializers
 from .models import Recipe, Review
 from profiles.serializers import UserSerializer
@@ -9,8 +11,8 @@ class RecipeRequestSerializer(serializers.Serializer):
     )
 
 class RecipeSerializer(serializers.ModelSerializer):
+    author = UserSerializer(read_only=True)
     class Meta:
-        author = UserSerializer(read_only=True)
         model = Recipe
         fields = [
             'id','title','ingredients','instructions','category','subcategory','photo','author','is_approved','created_at',
