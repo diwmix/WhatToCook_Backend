@@ -94,13 +94,16 @@ class RecipeDeleteView(APIView):
     def delete(self, request, pk):
         try:
             recipe = Recipe.objects.get(pk=pk)
-            if recipe.author == request.user | request.user.is_superuser:
-                recipe.delete()
-                return Response({"message": "Recipe deleted successfully"}, status=status.HTTP_200_OK)
-            else:
-                return Response({"error": "You are not the author of this recipe"}, status=status.HTTP_403_FORBIDDEN)
         except Recipe.DoesNotExist:
             return Response({"error": "Recipe not found"}, status=status.HTTP_404_NOT_FOUND)
+        
+        if recipe.author != request.user and not request.user.is_superuser:
+            return Response({"error": "You are not authorized to delete this recipe"}, status=status.HTTP_403_FORBIDDEN)
+        
+        request.user.created_dishes.remove(recipe)
+        recipe.delete()
+        
+        return Response({"message": "Recipe deleted successfully"}, status=status.HTTP_200_OK)
         
 
 class RecipeDetailView(APIView):
