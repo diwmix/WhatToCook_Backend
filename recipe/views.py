@@ -6,7 +6,7 @@ from .serializers import RecipeRequestSerializer , RecipeSerializer
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.status import HTTP_201_CREATED, HTTP_400_BAD_REQUEST
 from rest_framework.generics import ListAPIView
-from .models import Recipe, Review
+from .models import FavoriteRecipe, Recipe, Review
 from .serializers import RecipeSerializer, ReviewSerializer
 
 
@@ -63,7 +63,12 @@ class RecipeCreateView(APIView):
         data = request.data
         serializer = RecipeSerializer(data=data)
         if serializer.is_valid():
-            serializer.save(author=request.user)
+            # Сохранение рецепта
+            recipe = serializer.save(author=request.user)
+            
+            # Добавление рецепта в created_dishes пользователя
+            request.user.created_dishes.add(recipe)
+            
             return Response(serializer.data, status=HTTP_201_CREATED)
         return Response(serializer.errors, status=HTTP_400_BAD_REQUEST)
 
@@ -131,3 +136,34 @@ class ReviewView(APIView):
 
         serializer = ReviewSerializer(review)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+    
+    
+
+class FavoriteRecipeView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk):
+        """
+        Добавляет или удаляет рецепт из избранного.
+        """
+        user = request.user
+        try:
+            recipe = Recipe.objects.get(pk=pk)
+        except Recipe.DoesNotExist:
+            return Response({'error': 'Recipe not found'}, status=status.HTTP_404_NOT_FOUND)
+        if recipe not in user.favorite_dishes.all():
+            user.favorite_dishes.add(recipe)
+            return Response({'message': 'Recipe added to favorites'}, status=status.HTTP_201_CREATED)
+        else:
+            return Response({'message': 'Recipe already in favorites'}, status=status.HTTP_200_OK)
+        
+    def delete(self, request, pk):
+        user = request.user
+        try:
+            recipe = Recipe.objects.get(pk=pk)
+        except Recipe.DoesNotExist:
+            return Response({'error': 'Recipe not found'}, status=status.HTTP_404_NOT_FOUND)
+        
+        if recipe in user.favorite_dishes.all():
+            user.favorite_dishes.remove(recipe)
+            return Response({'message': 'Recipe removed from favorites'}, status=status.HTTP_200_OK)

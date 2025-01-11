@@ -1,7 +1,7 @@
 from random import random
 
 from rest_framework import serializers
-from .models import Recipe, Review
+from .models import Recipe, Review, FavoriteRecipe
 from profiles.serializers import UserSerializer
 
 class RecipeRequestSerializer(serializers.Serializer):
@@ -22,3 +22,10 @@ class ReviewSerializer(serializers.ModelSerializer):
     class Meta:
         model = Review
         fields = ['id', 'recipe', 'user', 'review_text', 'rating', 'created_at']
+
+class FavoriteRecipeSerializer(serializers.ModelSerializer):
+    recipe = RecipeSerializer()  # Вложенный сериализатор для получения деталей рецепта
+
+    class Meta:
+        model = FavoriteRecipe
+        fields = ['id', 'user', 'recipe', 'created_at']
