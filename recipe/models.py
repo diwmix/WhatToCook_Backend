@@ -16,6 +16,7 @@ class Recipe(models.Model):
     photo = CloudinaryField('recipe_photo', blank=True, null=True)
     author = models.ForeignKey(User, on_delete=models.CASCADE)
     is_approved = models.BooleanField(default=False)
+    is_declined = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def save(self, *args, **kwargs):

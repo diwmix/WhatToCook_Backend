@@ -72,6 +72,21 @@ class RecipeCreateView(APIView):
             return Response(serializer.data, status=HTTP_201_CREATED)
         return Response(serializer.errors, status=HTTP_400_BAD_REQUEST)
 
+class RecipeEditView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def put(self, request, pk):
+        try:
+            recipe = Recipe.objects.get(pk=pk)
+            if recipe.author != request.user and not request.user.is_superuser and not request.user.is_staff:
+                return Response({'error': 'You are not authorized to edit this recipe'}, status=status.HTTP_403_FORBIDDEN)
+            serializer = RecipeSerializer(recipe, data=request.data)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data, status=status.HTTP_200_OK)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except Recipe.DoesNotExist:
+            return Response({'error': 'Recipe not found'}, status=status.HTTP_404_NOT_FOUND)
 
 class PublishedRecipesView(ListAPIView):
     queryset = Recipe.objects.filter(is_approved=True).order_by('-created_at')
@@ -170,3 +185,32 @@ class FavoriteRecipeView(APIView):
         if recipe in user.favorite_dishes.all():
             user.favorite_dishes.remove(recipe)
             return Response({'message': 'Recipe removed from favorites'}, status=status.HTTP_200_OK)
+        
+class RecipeApproveView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk):
+        if not request.user.is_superuser or not request.user.is_staff:
+            return Response({'error': 'Only superusers can approve recipes'}, status=status.HTTP_403_FORBIDDEN)
+        try:
+            recipe = Recipe.objects.get(pk=pk)
+            recipe.is_approved = True
+            recipe.save()
+            return Response({'message': 'Recipe approved successfully'}, status=status.HTTP_200_OK)
+        except Recipe.DoesNotExist:
+            return Response({'error': 'Recipe not found'}, status=status.HTTP_404_NOT_FOUND)
+
+class RecipeDisapproveView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk):
+        if not request.user.is_superuser or not request.user.is_staff:
+            return Response({'error': 'Only superusers can disapprove recipes'}, status=status.HTTP_403_FORBIDDEN)
+        try:
+            recipe = Recipe.objects.get(pk=pk)
+            recipe.is_approved = False
+            recipe.is_declined = True
+            recipe.save()
+            return Response({'message': 'Recipe disapproved successfully'}, status=status.HTTP_200_OK)
+        except Recipe.DoesNotExist:
+            return Response({'error': 'Recipe not found'}, status=status.HTTP_404_NOT_FOUND)
