@@ -62,6 +62,7 @@ class UserViewSet(viewsets.ViewSet):
         # Додавання або оновлення рейтингу
         return self.add_or_update_rating(request, user, rated_by, rating_value)
 
+
     def add_or_update_rating(self, request, user, rated_by, rating_value):
         """Додавання або оновлення рейтингу"""
         existing_rating = Rating.objects.filter(user=user, rated_by=rated_by).first()
@@ -81,6 +82,12 @@ class UserViewSet(viewsets.ViewSet):
         serializer.save(rated_by=rated_by, user=user, rating=rating_value)
         user.update_average_rating()
         return Response({'status': 'Оцінку додано', 'average_rating': user.average_rating})
+
+    def top_users(self, request):
+        top_limit = 10
+        users = CustomUser.objects.filter(average_rating__gt=0).order_by('-average_rating')[:top_limit]
+        serializer = UserSerializer(users, many=True)
+        return Response(serializer.data)
 
 class UserAvatarUploadView(APIView):
     permission_classes = [IsAuthenticated]

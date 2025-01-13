@@ -15,4 +15,5 @@ urlpatterns = [
     path('api/users/soft-delete/', SoftDeleteProfileView.as_view(), name='soft-delete-profile'),
     path('api/users/profile-update/', UserProfileUpdateView.as_view(), name='user-profile-update'),
     path('api/users/logout/', LogoutView.as_view(), name='logout'),
+    path('api/users/top-list/', UserViewSet.as_view({'get': 'top_users'}), name='top-users'),
 ]
