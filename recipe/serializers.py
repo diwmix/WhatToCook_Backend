@@ -10,15 +10,20 @@ class RecipeRequestSerializer(serializers.Serializer):
         allow_empty=False
     )
 
-class RecipeSerializer(serializers.ModelSerializer):
-    author = UserSerializer(read_only=True)
-    class Meta:
-        model = Recipe
-        fields = [
-            'id','title','ingredients','instructions','category','subcategory','photo','author','is_approved','created_at',
-        ]
-        
+
 class ReviewSerializer(serializers.ModelSerializer):
+    user = UserSerializer(read_only=True)
+
     class Meta:
         model = Review
         fields = ['id', 'recipe', 'user', 'review_text', 'rating', 'created_at']
+
+
+class RecipeSerializer(serializers.ModelSerializer):
+    author = UserSerializer(read_only=True)
+    reviews = ReviewSerializer(many=True, read_only=True, source='review_set')
+    class Meta:
+        model = Recipe
+        fields = [
+            'id','title','ingredients','instructions','category','subcategory','photo','author','is_approved','created_at','reviews',
+        ]

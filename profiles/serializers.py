@@ -16,25 +16,26 @@ class UserSerializer(serializers.ModelSerializer):
     favorite_dishes = RecipeSerializer(many=True, read_only=True)
     created_dishes = RecipeSerializer(many=True, read_only=True)
     rating_count = serializers.IntegerField(read_only=True)
+    is_staff = serializers.BooleanField(read_only=True)
+    is_superuser = serializers.BooleanField(read_only=True)
 
     class Meta:
         model = CustomUser
         fields = ['id', 'username', 'email', 'description', 'social_links', 'age',
                   'allergic_products', 'restricted_products', 'favorite_dishes', 'created_dishes',
-                  'average_rating', 'rating_count', 'avatar']
+                  'average_rating', 'rating_count', 'avatar', 'is_staff', 'is_superuser']
 
 
 class RatingSerializer(serializers.ModelSerializer):
-    """Сериалізатор для рейтингу, який визначає, які поля будуть використовуватися в API."""
+    """Сериалізатор для рейтингу, який включає зв'язки з користувачем та рецептом"""
 
     class Meta:
         model = Rating
-        fields = ['user', 'rated_by', 'rating']
+        fields = ['rating', 'review', 'user', 'rated_by', 'recipe']
         read_only_fields = ['rated_by']
 
     def validate(self, data):
-        """Перевірка, щоб не оцінювати самого себе."""
-        if ['user'] == ['rated_by']:
+        if data['user'] == data['rated_by']:
             raise serializers.ValidationError("Ви не можете оцінити себе")
         return data
 
@@ -84,3 +85,4 @@ class UserProfileUpdateSerializer(serializers.ModelSerializer):
             setattr(instance, attr, value)
         instance.save()
         return instance
+
