@@ -1,8 +1,10 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.core.validators import MaxValueValidator, MinValueValidator
+from decimal import Decimal
 from django.db.models import Avg, Q
 from cloudinary.models import CloudinaryField
+from decimal import Decimal, ROUND_HALF_UP
 
 
 class CustomUser(AbstractUser):
@@ -26,10 +28,10 @@ class CustomUser(AbstractUser):
         return self.email
 
     def update_average_rating(self):
-        """Оновлення середнього рейтингу користувача. Функція обчислює середній рейтинг на основі всіх оцінок цього користувача."""
         from recipe.models import Recipe
         ratings = self.ratings.aggregate(average=Avg('rating'))
-        self.average_rating = ratings['average'] if ratings['average'] is not None else 0.0
+        # Обчислення середнього рейтингу
+        self.average_rating = round(ratings['average'] or 0.0, 2)
         self.save()
 
     @property
@@ -42,7 +44,8 @@ class Rating(models.Model):
     """Зберігається оцінка та зв'язок між оцінюваним та оціночним користувачем."""
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='ratings')
     rated_by = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='given_ratings')
-    rating = models.PositiveIntegerField(validators=[MinValueValidator(1), MaxValueValidator(5)])
+    rating = models.DecimalField(max_digits=3,  decimal_places=1,  validators=[MinValueValidator(Decimal('1.0')), MaxValueValidator(Decimal('5.0'))]
+    )
 
     class Meta:
         constraints = [

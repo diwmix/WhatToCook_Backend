@@ -4,11 +4,12 @@ from rest_framework.views import APIView
 from django.contrib.auth import authenticate
 from rest_framework.authtoken.models import Token
 from .models import CustomUser, Rating
-from .serializers import UserSerializer, RatingSerializer, RegistrationSerializer, TwoStepInRegister, UserProfileUpdateSerializer
+from .serializers import UserSerializer, RatingSerializer, RegistrationSerializer, TwoStepInRegister, UserProfileUpdateSerializer,RecipeSerializer
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.permissions import AllowAny
 from django.contrib.auth.hashers import check_password
+from recipe.models import Recipe
 
 
 class UserViewSet(viewsets.ViewSet):
@@ -207,3 +208,35 @@ class UserProfileUpdateView(APIView):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class UserRatingsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        """
+        Отримати всі відгуки користувача про страви
+        """
+        user = request.user
+        ratings = Rating.objects.filter(user=user)
+
+        if not ratings.exists():
+            return Response({"message": "Немає відгуків для цього користувача"}, status=404)
+
+        data = []
+        for rating in ratings:
+            recipe = rating.user
+            recipe_author = recipe.author
+            recipe_data = RecipeSerializer(recipe).data
+            user_data = UserSerializer(rating.user).data
+            author_data = UserSerializer(recipe_author).data
+
+            data.append({
+                "rating": rating.rating,
+                "review": rating.review,  # Якщо є поле відгуку
+                "recipe": recipe_data,
+                "user": user_data,
+                "author": author_data,
+            })
+
+        return Response(data)
