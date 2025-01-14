@@ -6,7 +6,7 @@ from .serializers import RecipeRequestSerializer , RecipeSerializer
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.status import HTTP_201_CREATED, HTTP_400_BAD_REQUEST
 from rest_framework.generics import ListAPIView
-from .models import Recipe, Review
+from .models import FavoriteRecipe, Recipe, Review
 from .serializers import RecipeSerializer, ReviewSerializer
 
 
@@ -25,16 +25,14 @@ class GenerateRecipeView(APIView):
             user = request.user
             allergy_ingredients = user.allergic_products
 
-            allergy_warning = (f"У мене алергія на наступні інгредієнти: {', '.join(allergy_ingredients)}. "
+            allergy_warning = (f"У мене алергія на наступні інгредієнти: {', '.join(allergy_ingredients)}. Якщо у рецепті такі інгредієнти, відповідай, що ти не можеш його приготувати."
                                if allergy_ingredients else "")
 
             prompt = (f"Ти кухар найкращого ресторану у світі та працюєш на сайт What To Cook. {allergy_warning}"
                       f"Дай мені пораду, яку страву я можу приготувати з цих інгредієнтів: {', '.join(ingredients)}."
                       f"На мої інші питання ти відповідаєш, що ти тільки кухар, який допомагає придумати рецепт. "
                       f"Якщо замість рецепту я вводжу неїстівні продукти, то ти кажеш, що з цього не можна нічого зробити та відразу пишеш будь-який інший рецепт на свій погляд."
-                      f"Формат, у якому ти маєш мені повертати рецепт, має складатись з:"
-                      f"1) Короткий опис страви. 2) Інгредієнти. 3) Рецепт приготування."
-                      f"Та завжди в кінці пиши * З любов'ю Саша")
+                      f"Формат, у якому ти маєш мені повертати рецепт, має Бути строго за форматом нічого від себе не додавай,  Назва страви: ... - Опис: ... - Інградієнти: ... - Рецепт: ...")
 
             try:
                 # Send request to Groq API
@@ -65,10 +63,30 @@ class RecipeCreateView(APIView):
         data = request.data
         serializer = RecipeSerializer(data=data)
         if serializer.is_valid():
-            serializer.save(author=request.user)
+            # Сохранение рецепта
+            recipe = serializer.save(author=request.user)
+            
+            # Добавление рецепта в created_dishes пользователя
+            request.user.created_dishes.add(recipe)
+            
             return Response(serializer.data, status=HTTP_201_CREATED)
         return Response(serializer.errors, status=HTTP_400_BAD_REQUEST)
 
+class RecipeEditView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def put(self, request, pk):
+        try:
+            recipe = Recipe.objects.get(pk=pk)
+            if recipe.author != request.user and not request.user.is_superuser and not request.user.is_staff:
+                return Response({'error': 'You are not authorized to edit this recipe'}, status=status.HTTP_403_FORBIDDEN)
+            serializer = RecipeSerializer(recipe, data=request.data)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data, status=status.HTTP_200_OK)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except Recipe.DoesNotExist:
+            return Response({'error': 'Recipe not found'}, status=status.HTTP_404_NOT_FOUND)
 
 class PublishedRecipesView(ListAPIView):
     queryset = Recipe.objects.filter(is_approved=True).order_by('-created_at')
@@ -91,13 +109,16 @@ class RecipeDeleteView(APIView):
     def delete(self, request, pk):
         try:
             recipe = Recipe.objects.get(pk=pk)
-            if recipe.author == request.user | request.user.is_superuser:
-                recipe.delete()
-                return Response({"message": "Recipe deleted successfully"}, status=status.HTTP_200_OK)
-            else:
-                return Response({"error": "You are not the author of this recipe"}, status=status.HTTP_403_FORBIDDEN)
         except Recipe.DoesNotExist:
             return Response({"error": "Recipe not found"}, status=status.HTTP_404_NOT_FOUND)
+        
+        if recipe.author != request.user and not request.user.is_superuser:
+            return Response({"error": "You are not authorized to delete this recipe"}, status=status.HTTP_403_FORBIDDEN)
+        
+        request.user.created_dishes.remove(recipe)
+        recipe.delete()
+        
+        return Response({"message": "Recipe deleted successfully"}, status=status.HTTP_200_OK)
         
 
 class RecipeDetailView(APIView):
@@ -133,3 +154,63 @@ class ReviewView(APIView):
 
         serializer = ReviewSerializer(review)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+    
+    
+
+class FavoriteRecipeView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk):
+        """
+        Добавляет или удаляет рецепт из избранного.
+        """
+        user = request.user
+        try:
+            recipe = Recipe.objects.get(pk=pk)
+        except Recipe.DoesNotExist:
+            return Response({'error': 'Recipe not found'}, status=status.HTTP_404_NOT_FOUND)
+        if recipe not in user.favorite_dishes.all():
+            user.favorite_dishes.add(recipe)
+            return Response({'message': 'Recipe added to favorites'}, status=status.HTTP_201_CREATED)
+        else:
+            return Response({'message': 'Recipe already in favorites'}, status=status.HTTP_200_OK)
+        
+    def delete(self, request, pk):
+        user = request.user
+        try:
+            recipe = Recipe.objects.get(pk=pk)
+        except Recipe.DoesNotExist:
+            return Response({'error': 'Recipe not found'}, status=status.HTTP_404_NOT_FOUND)
+        
+        if recipe in user.favorite_dishes.all():
+            user.favorite_dishes.remove(recipe)
+            return Response({'message': 'Recipe removed from favorites'}, status=status.HTTP_200_OK)
+        
+class RecipeApproveView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk):
+        if not request.user.is_superuser or not request.user.is_staff:
+            return Response({'error': 'Only superusers can approve recipes'}, status=status.HTTP_403_FORBIDDEN)
+        try:
+            recipe = Recipe.objects.get(pk=pk)
+            recipe.is_approved = True
+            recipe.save()
+            return Response({'message': 'Recipe approved successfully'}, status=status.HTTP_200_OK)
+        except Recipe.DoesNotExist:
+            return Response({'error': 'Recipe not found'}, status=status.HTTP_404_NOT_FOUND)
+
+class RecipeDisapproveView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk):
+        if not request.user.is_superuser or not request.user.is_staff:
+            return Response({'error': 'Only superusers can disapprove recipes'}, status=status.HTTP_403_FORBIDDEN)
+        try:
+            recipe = Recipe.objects.get(pk=pk)
+            recipe.is_approved = False
+            recipe.is_declined = True
+            recipe.save()
+            return Response({'message': 'Recipe disapproved successfully'}, status=status.HTTP_200_OK)
+        except Recipe.DoesNotExist:
+            return Response({'error': 'Recipe not found'}, status=status.HTTP_404_NOT_FOUND)

@@ -16,6 +16,7 @@ class Recipe(models.Model):
     photo = CloudinaryField('recipe_photo', blank=True, null=True)
     author = models.ForeignKey(User, on_delete=models.CASCADE)
     is_approved = models.BooleanField(default=False)
+    is_declined = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def save(self, *args, **kwargs):
@@ -40,3 +41,11 @@ class Review(models.Model):
 
     def __str__(self):
         return f"{self.user.username}'s review of {self.recipe.title}"
+    
+class FavoriteRecipe(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.user.username}'s favorite recipe: {self.recipe.title}"          
