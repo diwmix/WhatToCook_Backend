@@ -13,6 +13,6 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='recipe',
             name='id',
-            field=models.BigIntegerField(default=None, editable=False, primary_key=True, serialize=False),
+            field=models.UUIDField(default=None, editable=False, primary_key=True, serialize=False),
         ),
     ]
