@@ -10,7 +10,9 @@ from rest_framework.authentication import TokenAuthentication
 from rest_framework.permissions import AllowAny
 from django.contrib.auth.hashers import check_password
 from recipe.models import Recipe
-
+from itertools import chain
+from recipe.models import Recipe, Review
+from recipe.serializers import RecipeSerializer
 
 class UserViewSet(viewsets.ViewSet):
     permission_classes = [IsAuthenticated]
@@ -49,10 +51,16 @@ class UserViewSet(viewsets.ViewSet):
 
         try:
             # Знайдемо користувача, якому ставлять оцінку
-            user = CustomUser.objects.get(id=user_id)
+            try:
+                user = CustomUser.objects.get(id=user_id)
+            except CustomUser.DoesNotExist:
+                return Response({"error": "Користувача з таким id не знайдено."}, status=status.HTTP_404_NOT_FOUND)
 
             # Знайдемо користувача, який ставить оцінку
-            rated_by = CustomUser.objects.get(id=rated_by_id)
+            try:
+                rated_by = CustomUser.objects.get(id=rated_by_id)
+            except CustomUser.DoesNotExist:
+                return Response({"error": "Користувач, що оцінює, не знайдений."}, status=status.HTTP_404_NOT_FOUND)
         except CustomUser.DoesNotExist:
             return Response({"error": "Користувача не знайдено"}, status=404)
 
@@ -86,7 +94,13 @@ class UserViewSet(viewsets.ViewSet):
 
     def top_users(self, request):
         top_limit = 10
-        users = CustomUser.objects.filter(average_rating__gt=0).order_by('-average_rating')[:top_limit]
+        #більше 0
+        positive_rating_users = CustomUser.objects.filter(average_rating__gt=0).order_by('-average_rating')[:top_limit]
+        #= 0.0
+        zero_rating_users = CustomUser.objects.filter(average_rating=0)[:top_limit]
+        # тепер разом
+        users = list(chain(positive_rating_users, zero_rating_users))
+
         serializer = UserSerializer(users, many=True)
         return Response(serializer.data)
 
@@ -215,25 +229,25 @@ class UserRatingsView(APIView):
 
     def get(self, request):
         """
-        Отримати всі відгуки користувача про страви
+        Отримати всі рецепти, до яких користувач залишав відгуки
         """
         user = request.user
-        ratings = Rating.objects.filter(user=user)
+        reviews = Review.objects.filter(user=user)
 
-        if not ratings.exists():
-            return Response({"message": "Немає відгуків для цього користувача"}, status=404)
+        if not reviews.exists():
+            return Response({"message": "Користувач не залишив жодних відгуків на рецепти"}, status=404)
 
         data = []
-        for rating in ratings:
-            recipe = rating.user
+        for review in reviews:
+            recipe = review.recipe  # Отримуємо рецепт, для якого був залишений відгук
             recipe_author = recipe.author
             recipe_data = RecipeSerializer(recipe).data
-            user_data = UserSerializer(rating.user).data
+            user_data = UserSerializer(review.user).data
             author_data = UserSerializer(recipe_author).data
 
             data.append({
-                "rating": rating.rating,
-                "review": rating.review,  # Якщо є поле відгуку
+                "rating": review.rating,
+                "review": review.review_text,  # Якщо є поле відгуку
                 "recipe": recipe_data,
                 "user": user_data,
                 "author": author_data,

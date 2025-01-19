@@ -31,8 +31,7 @@ class RatingSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Rating
-        fields = ['rating', 'review', 'user', 'rated_by', 'recipe']
-        read_only_fields = ['rated_by']
+        fields = ['rating', 'user', 'rated_by']
 
     def validate(self, data):
         if data['user'] == data['rated_by']:
