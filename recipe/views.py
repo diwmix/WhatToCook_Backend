@@ -92,6 +92,10 @@ class PublishedRecipesView(ListAPIView):
     queryset = Recipe.objects.filter(is_approved=True).order_by('-created_at')
     serializer_class = RecipeSerializer
 
+class NotPublishedRecipesView(ListAPIView):
+    queryset = Recipe.objects.filter(is_approved=False).order_by('-created_at')
+    serializer_class = RecipeSerializer
+
 
 class RecipeSearchView(APIView):
     def get(self, request):
