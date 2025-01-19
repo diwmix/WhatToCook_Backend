@@ -26,6 +26,7 @@ class Migration(migrations.Migration):
                 ('photo', cloudinary.models.CloudinaryField(blank=True, max_length=255, null=True, verbose_name='recipe_photo')),
                 ('is_approved', models.BooleanField(default=False)),
                 ('created_at', models.DateTimeField(auto_now_add=True)),
+                ('is_declined', models.BooleanField(default=False)),
                 ('author', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL)),
             ],
         ),
