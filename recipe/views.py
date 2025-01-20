@@ -116,7 +116,7 @@ class RecipeDeleteView(APIView):
         except Recipe.DoesNotExist:
             return Response({"error": "Recipe not found"}, status=status.HTTP_404_NOT_FOUND)
         
-        if recipe.author != request.user and not request.user.is_superuser:
+        if recipe.author != request.user and not (request.user.is_superuser or request.user.is_staff):
             return Response({"error": "You are not authorized to delete this recipe"}, status=status.HTTP_403_FORBIDDEN)
         
         request.user.created_dishes.remove(recipe)
@@ -194,7 +194,7 @@ class RecipeApproveView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request, pk):
-        if not request.user.is_superuser or not request.user.is_staff:
+        if not (request.user.is_superuser or request.user.is_staff):
             return Response({'error': 'Only superusers can approve recipes'}, status=status.HTTP_403_FORBIDDEN)
         try:
             recipe = Recipe.objects.get(pk=pk)
@@ -208,12 +208,12 @@ class RecipeDisapproveView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request, pk):
-        if not request.user.is_superuser or not request.user.is_staff:
+        if not (request.user.is_superuser or request.user.is_staff):
             return Response({'error': 'Only superusers can disapprove recipes'}, status=status.HTTP_403_FORBIDDEN)
         try:
             recipe = Recipe.objects.get(pk=pk)
-            recipe.is_approved = False
-            recipe.is_declined = True
+            request.user.created_dishes.remove(recipe)
+            recipe.delete()
             recipe.save()
             return Response({'message': 'Recipe disapproved successfully'}, status=status.HTTP_200_OK)
         except Recipe.DoesNotExist:

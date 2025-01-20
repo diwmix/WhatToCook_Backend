@@ -8,7 +8,7 @@ class RecipeSerializer(serializers.ModelSerializer):
     """Сериалізатор для рецепту, який визначає поля, що будуть відображатися в API."""
     class Meta:
         model = Recipe
-        fields = ['id', 'title', 'ingredients', 'instructions', 'category', 'subcategory', 'photo', 'created_at']
+        fields = ['id', 'title', 'ingredients', 'instructions', 'category', 'subcategory', 'photo', 'created_at','is_approved']
 
 
 class UserSerializer(serializers.ModelSerializer):
