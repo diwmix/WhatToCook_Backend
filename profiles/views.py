@@ -289,7 +289,7 @@ class UserProfileUpdateView(APIView):
 class UserRatingsView(APIView):
     permission_classes = [IsAuthenticated]
 
-    def get(self, request):
+    def post(self, request):
         user_id = request.data.get('user_id')
 
         if not user_id:
