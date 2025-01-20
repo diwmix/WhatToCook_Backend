@@ -104,6 +104,68 @@ class UserViewSet(viewsets.ViewSet):
         serializer = UserSerializer(users, many=True)
         return Response(serializer.data)
 
+    def update_staff_status(self, request):
+        if not request.user.is_superuser:
+            return Response(
+                {"error": "Тільки суперкористувачі можуть оновлювати статус is_staff."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        user_id = request.data.get("user_id")
+
+        if user_id is None:
+            return Response(
+                {"error": "Поле 'user_id' є обов'язковими."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            user = CustomUser.objects.get(id=user_id)
+        except CustomUser.DoesNotExist:
+            return Response(
+                {"error": "Користувача з таким ID не знайдено."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        user.is_staff = True
+        user.save()
+
+        return Response(
+            {"message": f"Статус оновлено"},
+            status=status.HTTP_200_OK
+        )
+
+    def dell_staff_status(self, request):
+        if not request.user.is_superuser:
+            return Response(
+                {"error": "Тільки суперкористувачі можуть оновлювати статус is_staff."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        user_id = request.data.get("user_id")
+
+        if user_id is None:
+            return Response(
+                {"error": "Поле 'user_id' є обов'язковими."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            user = CustomUser.objects.get(id=user_id)
+        except CustomUser.DoesNotExist:
+            return Response(
+                {"error": "Користувача з таким ID не знайдено."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        user.is_staff = False
+        user.save()
+
+        return Response(
+            {"message": f"Статус оновлено"},
+            status=status.HTTP_200_OK
+        )
+
 class UserAvatarUploadView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -228,18 +290,24 @@ class UserRatingsView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        """
-        Отримати всі рецепти, до яких користувач залишав відгуки
-        """
-        user = request.user
+        user_id = request.data.get('user_id')
+
+        if not user_id:
+            return Response({"message": "Передай id користувача "}, status=400)
+
+        try:
+            user = CustomUser.objects.get(id=user_id)
+        except CustomUser.DoesNotExist:
+            return Response({"message": "З таким id не знайдено нікого "}, status=404)
+
         reviews = Review.objects.filter(user=user)
 
         if not reviews.exists():
-            return Response({"message": "Користувач не залишив жодних відгуків на рецепти"}, status=404)
+            return Response({"message": "Нема відгуків від цього користувача "}, status=404)
 
         data = []
         for review in reviews:
-            recipe = review.recipe  # Отримуємо рецепт, для якого був залишений відгук
+            recipe = review.recipe  # рецепт, де був залишений відгук
             recipe_author = recipe.author
             recipe_data = RecipeSerializer(recipe).data
             user_data = UserSerializer(review.user).data
@@ -247,7 +315,7 @@ class UserRatingsView(APIView):
 
             data.append({
                 "rating": review.rating,
-                "review": review.review_text,  # Якщо є поле відгуку
+                "review": review.review_text,
                 "recipe": recipe_data,
                 "user": user_data,
                 "author": author_data,

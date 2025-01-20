@@ -16,5 +16,7 @@ urlpatterns = [
     path('api/users/profile-update/', UserProfileUpdateView.as_view(), name='user-profile-update'),
     path('api/users/logout/', LogoutView.as_view(), name='logout'),
     path('api/users/top-list/', UserViewSet.as_view({'get': 'top_users'}), name='top-users'),
-    path('api/users/all-ratings-user/', UserRatingsView.as_view(), name='user_ratings')
+    path('api/users/all-ratings-user/', UserRatingsView.as_view(), name='user_ratings'),
+    path('api/update-staff-status/', UserViewSet.as_view({'post': 'update_staff_status'}), name='update_staff_status'),
+    path('api/dell-staff-tatus/', UserViewSet.as_view({'post': 'dell_staff_status'}), name='dell_staff_status'),
 ]
