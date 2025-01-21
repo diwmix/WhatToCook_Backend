@@ -257,18 +257,21 @@ class SoftDeleteProfileView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        user = request.user
+        user_id = request.data.get("user_id")
 
-        # Якщо користувач уже видалений, не даємо можливості видаляти профіль повторно
-        if not user.is_active:
-            return Response({"error": "Your account is already deactivated."}, status=status.HTTP_400_BAD_REQUEST)
+        if not user_id:
+            return Response({"error": "Передай ід ."}, status=status.HTTP_400_BAD_REQUEST)
 
-        # М'яке видалення профілю
-        user.is_active = False
-        user.save()
+        if not (request.user.is_superuser or request.user.is_staff):
+            return Response({'error': 'Тільки адміни можуть це робити'}, status=status.HTTP_403_FORBIDDEN)
+        try:
+            user = CustomUser.objects.get(id=user_id)
+        except CustomUser.DoesNotExist:
+            return Response({"error": "Юзера нема такого в системі"}, status=status.HTTP_404_NOT_FOUND)
 
-        return Response({"message": "Your account has been deactivated successfully."}, status=status.HTTP_200_OK)
+        user.delete()
 
+        return Response({"message": f"Видалено"}, status=status.HTTP_200_OK)
 
 class UserProfileUpdateView(APIView):
     permission_classes = [IsAuthenticated]
