@@ -12,7 +12,7 @@ class CustomUser(AbstractUser):
     username = models.CharField(max_length=150, blank=True, null=True)
     description = models.TextField(blank=True, null=True)
     social_links = models.JSONField(blank=True, null=True)
-    avatar = CloudinaryField('avatar', blank=True, null=True)
+    avatar = CloudinaryField('avatar', blank=True, null=True, default="image/upload/v1737444623/default-user-icon-13_ez6cy7.png" )
     age = models.PositiveIntegerField(blank=True, null=True)
     allergic_products = models.TextField(blank=True, null=True)
     restricted_products = models.TextField(blank=True, null=True)
