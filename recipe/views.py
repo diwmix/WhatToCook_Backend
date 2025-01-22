@@ -25,7 +25,7 @@ class GenerateRecipeView(APIView):
             user = request.user
             allergy_ingredients = user.allergic_products
 
-            allergy_warning = (f"У мене алергія на наступні інгредієнти: {', '.join(allergy_ingredients)}. Якщо у рецепті такі інгредієнти, відповідай, що ти не можеш його приготувати."
+            allergy_warning = (f"У мене алергія на наступні інгредієнти: {allergy_ingredients}. Якщо у рецепті такі інгредієнти, пиши 'Я не можу приготувати для вас цю страву через алергію на ...'"
                                if allergy_ingredients else "")
 
             prompt = (f"Ти кухар найкращого ресторану у світі та працюєш на сайт What To Cook. {allergy_warning}"
