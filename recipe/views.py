@@ -11,7 +11,7 @@ from .serializers import RecipeSerializer, ReviewSerializer
 
 
 client = Groq(
-    api_key="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"
+    api_key="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"
 )
 
 class GenerateRecipeView(APIView):
